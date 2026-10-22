@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="card">
+  {% set filter_action = url_for('dashboard') %}
+  {% include "_filters.html" %}
+</div>
+
+<div class="grid stats">
+  <div class="card stat"><div class="label">Total spent</div><div class="value">{{ summary.total | money }}</div></div>
+  <div class="card stat"><div class="label">Number of expenses</div><div class="value">{{ summary.count }}</div></div>
+  <div class="card stat"><div class="label">Average expense</div><div class="value">{{ summary.average | money }}</div></div>
+  <div class="card stat"><div class="label">Highest expense</div><div class="value">{{ summary.highest | money }}</div></div>
+  <div class="card stat"><div class="label">This month</div><div class="value">{{ this_month | money }}</div></div>
+</div>
+
+{% if summary.count == 0 %}
+  <div class="card empty">
+    No expenses match these filters yet.
+    <a href="{{ url_for('add_expense') }}">Add your first expense</a>.
+  </div>
+{% else %}
+<div class="grid two">
+  <div class="card chart">
+    <h2>Spending by category</h2>
+    <img src="{{ url_for('chart_category', **chart_args) }}" alt="Pie chart of spending by category">
+  </div>
+  <div class="card chart">
+    <h2>Monthly spending</h2>
+    <img src="{{ url_for('chart_monthly', **chart_args) }}" alt="Bar chart of monthly spending">
+  </div>
+</div>
+
+<div class="grid two">
+  <div class="card">
+    <h2>Category totals</h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Category</th><th class="num">Total</th><th class="num">Share</th><th></th></tr></thead>
+      <tbody>
+      {% for b in breakdown %}
+        <tr>
+          <td>{{ b.category }}</td>
+          <td class="num">{{ b.total | money }}</td>
+          <td class="num">{{ '%.1f' | format(b.percent) }}%</td>
+          <td><div class="bar-bg"><div class="bar" style="width: {{ b.percent }}%"></div></div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Recent expenses</h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for e in recent %}
+        <tr><td>{{ e.expense_date | nice_date }}</td><td>{{ e.title }}<div class="muted">{{ e.category_name }}</div></td><td class="num">{{ e.amount | money }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p><a href="{{ url_for('expenses', **chart_args) }}">See all matching expenses &rarr;</a></p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

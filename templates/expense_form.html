@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add expense' if mode == 'add' else 'Edit expense' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Add expense' if mode == 'add' else 'Edit expense' }}</h1>
+
+{% if not categories %}
+  <div class="card empty">
+    You need at least one category first.
+    <a href="{{ url_for('categories') }}">Create a category</a>.
+  </div>
+{% else %}
+<div class="card" style="max-width:560px">
+  <form method="post" action="{{ action }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" name="title" maxlength="100" required value="{{ form.title or '' }}" class="{{ 'invalid' if errors.title }}">
+      {% if errors.title %}<div class="error-text">{{ errors.title }}</div>{% endif %}
+    </div>
+    <div class="field">
+      <label for="amount">Amount</label>
+      <input type="number" id="amount" name="amount" step="0.01" min="0.01" required value="{{ form.amount or '' }}" class="{{ 'invalid' if errors.amount }}">
+      {% if errors.amount %}<div class="error-text">{{ errors.amount }}</div>{% endif %}
+    </div>
+    <div class="field">
+      <label for="expense_date">Date</label>
+      <input type="date" id="expense_date" name="expense_date" max="{{ today }}" required value="{{ form.expense_date or '' }}" class="{{ 'invalid' if errors.expense_date }}">
+      {% if errors.expense_date %}<div class="error-text">{{ errors.expense_date }}</div>{% endif %}
+    </div>
+    <div class="field">
+      <label for="category_id">Category</label>
+      <select id="category_id" name="category_id" required class="{{ 'invalid' if errors.category_id }}">
+        <option value="">-- choose --</option>
+        {% for c in categories %}
+          <option value="{{ c.id }}" {{ 'selected' if (form.category_id | string) == (c.id | string) }}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      {% if errors.category_id %}<div class="error-text">{{ errors.category_id }}</div>{% endif %}
+    </div>
+    <div class="field">
+      <label for="notes">Notes (optional)</label>
+      <textarea id="notes" name="notes" rows="3" maxlength="500" class="{{ 'invalid' if errors.notes }}">{{ form.notes or '' }}</textarea>
+      {% if errors.notes %}<div class="error-text">{{ errors.notes }}</div>{% endif %}
+    </div>
+    <button type="submit" class="btn">{{ 'Save expense' if mode == 'add' else 'Update expense' }}</button>
+    <a class="btn secondary" href="{{ url_for('expenses') }}">Cancel</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

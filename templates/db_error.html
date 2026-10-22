@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Database not ready{% endblock %}
+{% block content %}
+<div class="card" style="max-width:700px">
+  <h1>The database is not ready</h1>
+  <div class="flash error">{{ message }}</div>
+  <p>Things to check:</p>
+  <ol>
+    <li>MySQL is installed and running.</li>
+    <li>You copied <code>.env.example</code> to <code>.env</code> and typed your own MySQL user name and password.</li>
+    <li>You created the tables with <code>python init_db.py --sample</code>.</li>
+    <li>Run <code>python diagnose.py</code> in the project folder for a step-by-step check.</li>
+  </ol>
+  <a class="btn" href="{{ url_for('dashboard') }}">Try again</a>
+</div>
+{% endblock %}

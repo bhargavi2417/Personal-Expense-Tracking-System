@@ -1,0 +1,23 @@
+<form method="get" action="{{ filter_action }}" class="filters">
+  <div class="field">
+    <label for="start">From date</label>
+    <input type="date" id="start" name="start" value="{{ filters.start or '' }}">
+  </div>
+  <div class="field">
+    <label for="end">To date</label>
+    <input type="date" id="end" name="end" value="{{ filters.end or '' }}">
+  </div>
+  <div class="field">
+    <label for="category">Category</label>
+    <select id="category" name="category">
+      <option value="">All categories</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}" {{ 'selected' if filters.category_id == c.id }}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <button type="submit" class="btn">Apply filters</button>
+    <button type="button" id="reset-filters" class="btn secondary" data-url="{{ filter_action }}">Clear</button>
+  </div>
+</form>
