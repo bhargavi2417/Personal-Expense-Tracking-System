@@ -3,6 +3,7 @@
 
 import re
 import sqlite3
+import certifi
 from contextlib import contextmanager
 
 PLACEHOLDER_PASSWORD = "your_mysql_password_here"
