@@ -1,5 +1,5 @@
 
-"""Database helper supporting MySQL and SQLite."""
+"""Database helper for MySQL/TiDB in production and SQLite in tests."""
 
 import re
 import sqlite3
@@ -11,7 +11,7 @@ _DB_NAME_RE = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 
 
 class DatabaseError(Exception):
-    """A database problem with a safe user-facing message."""
+    """A database problem with a safe message."""
 
 
 class DatabaseUnavailable(DatabaseError):
@@ -23,21 +23,18 @@ class IntegrityViolation(DatabaseError):
 
 
 def config_problems(cfg):
-    """Return configuration problems."""
     problems = []
 
     if not cfg.get("DB_USER"):
         problems.append("DB_USER is missing.")
 
     password = cfg.get("DB_PASSWORD")
-
     if password is None or password == "":
         problems.append("DB_PASSWORD is missing.")
     elif password == PLACEHOLDER_PASSWORD:
         problems.append("DB_PASSWORD still has the example value.")
 
     name = cfg.get("DB_NAME") or ""
-
     if not _DB_NAME_RE.match(name):
         problems.append(
             "DB_NAME must contain only letters, digits and underscores."
@@ -55,18 +52,15 @@ def _explain_mysql_error(exc):
 
     if code == 1045:
         return "MySQL rejected the username or password. Check DB_USER and DB_PASSWORD."
-
     if code == 1049:
         return "The database does not exist. Check DB_NAME."
-
     if code in (2002, 2003, 2005, 2006, 2013):
         return (
-            "Cannot reach the database server. Check DB_HOST, DB_PORT, "
-            "TLS settings, and database network access."
+            "Cannot reach the MySQL server. Check DB_HOST, DB_PORT, "
+            "TiDB network access and SSL settings."
         )
-
     if code in (1146, 1054):
-        return "Database tables are missing or outdated."
+        return "Database tables or columns are missing or outdated."
 
     return "A MySQL error occurred (code %s)." % code
 
@@ -93,17 +87,15 @@ class Database:
             return conn
 
         problems = config_problems(self.cfg)
-
         if problems:
             raise DatabaseUnavailable(" ".join(problems))
 
         try:
             import pymysql
             from pymysql.constants import CLIENT
-            import certifi
         except ImportError as exc:
             raise DatabaseUnavailable(
-                "A required package is missing. Check requirements.txt."
+                "PyMySQL is not installed. Add pymysql to requirements.txt."
             ) from exc
 
         self._mod = pymysql
@@ -119,12 +111,9 @@ class Database:
                 cursorclass=pymysql.cursors.DictCursor,
                 connect_timeout=10,
                 client_flag=CLIENT.FOUND_ROWS,
-                autocommit=False,
-
-                # Enable TLS and verify the server certificate.
                 ssl={"ca": certifi.where()},
+                autocommit=False,
             )
-
         except pymysql.MySQLError as exc:
             raise DatabaseUnavailable(
                 _explain_mysql_error(exc)
@@ -166,7 +155,8 @@ class Database:
             except self._mod.IntegrityError as exc:
                 conn.rollback()
                 raise IntegrityViolation(
-                    "That change violates a database rule."
+                    "That change breaks a database rule "
+                    "(duplicate name or item still in use)."
                 ) from exc
 
             except self._mod.Error as exc:
@@ -191,11 +181,11 @@ class Database:
         return self._run(sql, params, "one")
 
     def execute(self, sql, params=None):
-        """Run INSERT, UPDATE, or DELETE."""
+        """Run INSERT, UPDATE or DELETE."""
         return self._run(sql, params, "write")
 
     def check(self):
-        """Verify the connection and required tables."""
+        """Check the database connection and required tables."""
         counts = {}
 
         for table in ("categories", "expenses"):
@@ -205,5 +195,8 @@ class Database:
             counts[table] = int(row["n"])
 
         return counts
+
+
+    
 
        
